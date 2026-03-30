@@ -1,27 +1,43 @@
-import re
-from telegram import Update
+import os
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-import config
 
-# Regex to find Amazon links
-AMAZON_REGEX = r"(https?://www.amazon.[a-z.]+/dp/[A-Z0-9]+|https?://amzn.to/[a-zA-Z0-9]+)"
+# 1. Logging setup (taki hume errors dikhein)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
+# 2. Token fetch karna (Render Environment Variables se)
+TOKEN = os.environ.get("BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Welcome! Send me an Amazon link and I'll convert it to your affiliate link.")
+    welcome_text = (
+        "👋 *Welcome to Amazon Converter Bot!*\n\n"
+        "🔹 *Status:* Active ✅\n"
+        "🔹 *Tag:* `Not Set`\n\n"
+        "Link bhejiye, main convert kar dunga!"
+    )
+    await update.message.reply_text(welcome_text, parse_mode='Markdown')
 
-async def convert_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def converter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    # Simplified logic: Replace or append the tag
     if "amazon" in text or "amzn.to" in text:
-        # In a real bot, you'd fetch the user's saved tag from a database here
-        user_tag = "sumandealsx-21" 
-        
-        # Logic to clean and append tag
-        new_link = f"{text.split('?')[0]}?tag={user_tag}"
-        await update.message.reply_text(f"✅ Your converted link:\n{new_link}")
+        # Example conversion (Simple logic)
+        tag = "sumandealsx-21"
+        new_link = f"{text.split('?')[0]}?tag={tag}"
+        await update.message.reply_text(f"✅ *Converted:* \n{new_link}", parse_mode='Markdown')
 
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(config.BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), convert_link))
-    app.run_polling()
+    # Token check loop
+    if not TOKEN:
+        print("❌ ERROR: BOT_TOKEN is missing in Render Settings!")
+    else:
+        app = ApplicationBuilder().token(TOKEN).build()
+        
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), converter))
+        
+        print("🚀 Bot is starting...")
+        app.run_polling()
